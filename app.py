@@ -1,6 +1,5 @@
 import streamlit as st
 
-
 import config
 from rag_system import query_rag, get_retriever_info, ingest_docs
 import time
@@ -61,6 +60,26 @@ def obtener_info_archivos(ruta):
                 })
     return archivos
 
+
+def leer_logs_con_formato(ruta_log='logs/historial_db.log', n_lineas=20):
+    if os.path.exists(ruta_log):
+        with open(ruta_log, 'r', encoding='utf-8') as f:
+            lineas = f.readlines()
+            ultimas_lineas = lineas[-n_lineas:]
+
+            # Procesamos cada línea para añadir indicadores visuales
+            log_formateado = ""
+            for linea in ultimas_lineas:
+                if "[ERROR]" in linea:
+                    log_formateado += f"❌ {linea}"
+                elif "[WARNING]" in linea:
+                    log_formateado += f"⚠️ {linea}"
+                elif "ÉXITO" in linea or "EXITOSAMENTE" in linea:
+                    log_formateado += f"✅ {linea}"
+                else:
+                    log_formateado += f"🔹 {linea}"
+            return log_formateado
+    return "No se encontraron registros de actividad."
 
 # --- TÍTULO ---
 st.title("⚖️ Sistema RAG - Asistente Legal")
@@ -124,34 +143,113 @@ with st.sidebar:
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    tab_chat, tab_historial = st.tabs(["💬 Chat de Consulta", "📜 Historial de Cargas"])
+    # Añadimos la tercera pestaña "🖥️ Monitor"
+    tab_chat, tab_historial, tab_monitor = st.tabs([
+        "💬 Consultoría Inteligente",
+        "📜 Archivo Documental",
+        "🖥️ Monitor de Sistema"
+    ])
 
     with tab_chat:
-        chat_container = st.container(height=500)
-        with chat_container:
-            for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
+        # Contenedor principal con borde sutil para delimitar el área de trabajo
+        with st.container(border=True):
+            chat_container = st.container(height=550)
+
+            with chat_container:
+                if not st.session_state.messages:
+                    # Estado vacío con diseño elegante
+                    st.markdown(
+                        """
+                        <div style="text-align: center; padding: 50px; color: #888;">
+                            <h3 style="margin-bottom: 10px;">⚖️ Bienvenido al Asistente Legal</h3>
+                            <p>Realice una consulta sobre sus contratos para comenzar el análisis.</p>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                for message in st.session_state.messages:
+                    with st.chat_message(message["role"]):
+                        # Diseño de burbuja basado en el rol
+                        if message["role"] == "user":
+                            st.markdown(f"**Tú:** {message['content']}")
+                        else:
+                            # Respuesta del asistente con formato Markdown optimizado
+                            st.markdown("##### Análisis Legal")
+                            st.markdown(message["content"])
+
+                            # Si hay documentos, mostrar un pequeño badge indicador
+                            if "docs" in message and message["docs"]:
+                                st.caption(f"📍 Basado en {len(message['docs'])} fuentes del archivo.")
 
     with tab_historial:
-        st.markdown("### 📜 Inventario de Documentos")
+        # Aquí integramos el diseño de tabla que definimos anteriormente
+        st.markdown("### 📜 Repositorio de Conocimiento")
         lista_archivos = obtener_info_archivos(CONTRATOS_PATH)
 
         if lista_archivos:
+            # Estilo de tabla "Premium" usando dataframe con configuración de columna
             df_archivos = pd.DataFrame(lista_archivos)
-            # Actualización: width='stretch' reemplaza use_container_width=True
-            st.dataframe(df_archivos, width='stretch', hide_index=True)
-
-            # Botón para descargar inventario
-            csv = df_archivos.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Descargar Inventario (CSV)",
-                data=csv,
-                file_name="inventario_contratos.csv",
-                mime="text/csv",
+            st.dataframe(
+                df_archivos,
+                width='stretch',
+                hide_index=True,
+                column_config={
+                    "Archivo": st.column_config.TextColumn("Nombre del Documento", width="large"),
+                    "Fecha de Carga": st.column_config.TextColumn("📅 Fecha"),
+                    "Tamaño": st.column_config.TextColumn("📦 Tamaño")
+                }
             )
+
+            col_down, col_info = st.columns([1, 1])
+            with col_down:
+                csv = df_archivos.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="📥 Exportar Inventario",
+                    data=csv,
+                    file_name="inventario_legal.csv",
+                    mime="text/csv",
+                    width='stretch'
+                )
         else:
-            st.info("No hay documentos indexados aún.")
+            st.info("El archivo documental está vacío. Por favor, cargue documentos en la barra lateral.")
+
+    with tab_monitor:
+        st.markdown("### 🖥️ Consola de Diagnóstico")
+
+        # Creamos un contenedor vacío para que el log se imprima siempre actualizado
+        placeholder_log = st.empty()
+
+        # Obtenemos los logs procesados
+        logs_texto = leer_logs_con_formato()
+
+        # Mostramos el log dentro del placeholder
+        placeholder_log.text_area(
+            label="Eventos recientes del motor RAG",
+            value=logs_texto,
+            height=400,
+            key=f"log_area_{st.session_state.uploader_id}",  # Clave dinámica para forzar renderizado
+            help="Los errores críticos aparecen marcados con ❌"
+        )
+
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            # El botón ahora limpia el estado previo antes de reiniciar
+            if st.button("🔄 Refrescar Consola", width='stretch'):
+                # Pequeño truco: actualizamos el ID para que Streamlit
+                # regenere el widget de texto por completo
+                st.session_state.uploader_id += 1
+                st.rerun()
+        with col_btn2:
+            if os.path.exists('logs/historial_db.log'):
+                with open('logs/historial_db.log', 'rb') as f:
+                    st.download_button(
+                        label="📥 Descargar Log Completo",
+                        data=f,
+                        file_name="historial_tecnico.log",
+                        mime="text/plain",
+                        width='stretch'
+                    )
 
 with col2:
     st.markdown("### 📄 Documentos Relevantes")

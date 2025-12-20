@@ -1,5 +1,7 @@
 import os
 
+# ls -l .\chroma.sqlite3
+
 # Obtener la ruta del directorio actual donde está este archivo
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 

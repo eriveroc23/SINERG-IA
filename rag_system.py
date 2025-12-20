@@ -1,6 +1,7 @@
 #from langchain_community.vectorstores import Chroma
 import shutil
-
+import logging
+from datetime import datetime
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 #from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -10,7 +11,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_classic.retrievers.multi_query import MultiQueryRetriever
 from langchain_classic.retrievers import EnsembleRetriever
-
+import os
 import streamlit as st
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -112,45 +113,74 @@ def initialize_rag_system():
 
     return rag_chain, mmr_multi_retriever
 
+# Configuración básica de logging para ver en consola
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - ⚖️ [SISTEMA RAG] - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+
+# --- CONFIGURACIÓN PROFESIONAL DE LOGGING ---
+def setup_logger():
+    # Crear carpeta de logs si no existe
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
+
+    logger = logging.getLogger("SISTEMA_RAG")
+    logger.setLevel(logging.INFO)
+
+    # Evitar duplicados si el logger ya existe
+    if not logger.handlers:
+        # 1. Formato del mensaje: Fecha - Nivel - Mensaje
+        formatter = logging.Formatter('%(asctime)s - [%(levelname)s] - %(message)s')
+
+        # 2. Handler para la TERMINAL
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+
+        # 3. Handler para el ARCHIVO FÍSICO (Modo 'a' para anexar sin borrar lo previo)
+        file_handler = logging.FileHandler('logs/historial_db.log', mode='a', encoding='utf-8')
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+    return logger
+
+
+logger = setup_logger()
+
 
 def ingest_docs():
-    # 1. Borrar base de datos vieja para evitar duplicados o errores de acceso
-    if os.path.exists(CHROMA_DB_PATH):
-        # A veces Windows bloquea la carpeta, intentamos borrarla
-        try:
-            shutil.rmtree(CHROMA_DB_PATH)
-        except:
-            pass  # Si falla es porque está en uso, Chroma lo manejará
+    inicio = datetime.now()
+    logger.info(">>> INICIO DE ACTUALIZACIÓN DE BDs <<<")
 
-    # 1. Cargar PDFs
-    loader = PyPDFDirectoryLoader(CONTRATOS_PATH)
-    documentos = loader.load()
+    try:
+        # Carga de documentos
+        loader = PyPDFDirectoryLoader(CONTRATOS_PATH)
+        documentos = loader.load()
+        logger.info(f"Archivos leídos: {len(documentos)} páginas cargadas.")
 
-    if not documentos:
-        print("No se encontraron documentos para indexar.")
-        return None
+        # Fragmentación
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=200)
+        docs_split = text_splitter.split_documents(documentos)
+        logger.info(f"Procesamiento: {len(docs_split)} fragmentos generados.")
 
-    # 2. Dividir en Chunks (Ajustado a 1200 para mejor precisión legal)
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1200,
-        chunk_overlap=200
-    )
-    docs_split = text_splitter.split_documents(documentos)
+        # Embeddings e Ingesta
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+        vector_store = Chroma.from_documents(
+            documents=docs_split,
+            embedding=embeddings,
+            persist_directory=CHROMA_DB_PATH
+        )
 
-    # 3. Inicializar Embeddings
-    embeddings = GoogleGenerativeAIEmbeddings(model=EMBEDDING_MODEL)
+        tiempo_total = datetime.now() - inicio
+        logger.info(f"--- ÉXITO: Base de datos actualizada en {tiempo_total.total_seconds():.2f}s ---")
+        return vector_store
 
-    # 4. Crear o Actualizar la Base de Datos
-    # Usamos from_documents para procesar todo el directorio y persistirlo
-    vector_store = Chroma.from_documents(
-        documents=docs_split,
-        embedding=embeddings,
-        persist_directory=CHROMA_DB_PATH
-    )
-
-    print(f"✅ Ingesta completada: {len(docs_split)} fragmentos indexados.")
-    return vector_store
-
+    except Exception as e:
+        logger.error(f"!!! ERROR EN LA INGESTA: {str(e)}")
+        raise e
 def query_rag(question):
     try:
         rag_chain, retriever = initialize_rag_system()
