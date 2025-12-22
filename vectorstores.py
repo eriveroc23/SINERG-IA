@@ -28,14 +28,14 @@ def base_datos():
         persist_directory=CHROMA_DB_PATH
     )
 
-    #consulta = "¿Cual es la Documentación mínima a presentar?"
+    consulta = "¿Cual es la Documentación mínima a presentar?"
 
-    #resultado = vector_stores.similarity_search(consulta, k=3)
+    resultado = vector_stores.similarity_search(consulta, k=3)
 
-    # print("Top 3 documentos más similares a la consulta:\n")
-    # for i, doc in enumerate(resultado, start=1):
-    #     print(f"Contenido {doc.page_content}")
-    #     print(f"Metadatos {doc.metadata}")
-    #
+    print("Top 3 documentos más similares a la consulta:\n")
+    for i, doc in enumerate(resultado, start=1):
+        print(f"Contenido {doc.page_content}")
+        print(f"Metadatos {doc.metadata}")
+
 
     return vector_stores

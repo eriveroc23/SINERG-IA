@@ -1,5 +1,5 @@
 #from langchain_community.vectorstores import Chroma
-import shutil
+
 import logging
 from datetime import datetime
 from langchain_chroma import Chroma
@@ -11,7 +11,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_classic.retrievers.multi_query import MultiQueryRetriever
 from langchain_classic.retrievers import EnsembleRetriever
-import os
+
 import streamlit as st
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -127,28 +127,28 @@ def setup_logger():
     if not os.path.exists('logs'):
         os.makedirs('logs')
 
-    logger = logging.getLogger("SISTEMA_RAG")
-    logger.setLevel(logging.INFO)
+    logger_sys = logging.getLogger("SISTEMA_RAG")
+    logger_sys.setLevel(logging.INFO)
 
     # Evitar duplicados si el logger ya existe
-    if not logger.handlers:
+    if not logger_sys.handlers:
         # 1. Formato del mensaje: Fecha - Nivel - Mensaje
         formatter = logging.Formatter('%(asctime)s - [%(levelname)s] - %(message)s')
 
         # 2. Handler para la TERMINAL
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
+        logger_sys.addHandler(console_handler)
 
         # 3. Handler para el ARCHIVO FÍSICO (Modo 'a' para anexar sin borrar lo previo)
         file_handler = logging.FileHandler('logs/historial_db.log', mode='a', encoding='utf-8')
         file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+        logger_sys.addHandler(file_handler)
 
-    return logger
+    return logger_sys
 
 
-logger = setup_logger()
+
 
 
 def ingest_docs():
