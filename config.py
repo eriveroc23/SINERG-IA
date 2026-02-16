@@ -10,7 +10,7 @@ CONTRATOS_PATH = os.path.join(BASE_DIR, "contratos")
 # CHROMA_DB_PATH = os.path.join(BASE_DIR, "chroma_db")
 
 # Configuración de modelos GOOGLE
-EMBEDDING_MODEL = "text-embedding-004"
+EMBEDDING_MODEL = "gemini-embedding-001"
 QUERY_MODEL = "gemini-flash-latest"
 GENERATION_MODEL = "gemini-flash-latest"
 

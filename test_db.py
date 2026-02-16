@@ -2,12 +2,13 @@ import os
 from langchain_chroma import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from config import CHROMA_DB_PATH
+from config import EMBEDDING_MODEL
 
 def verify_chroma_db():
     print("--- 🔍 Iniciando Verificación de Chroma ---")
 
     # 1. Configurar Embeddings (debe ser el mismo que usaste al crear la DB)
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+    embeddings = GoogleGenerativeAIEmbeddings(model=EMBEDDING_MODEL)
 
     # 2. Cargar la DB desde el directorio persistente
     # Asegúrate de que esta ruta coincida con la de tu config.py

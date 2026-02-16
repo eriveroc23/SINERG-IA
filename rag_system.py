@@ -1,5 +1,4 @@
-#from langchain_community.vectorstores import Chroma
-
+# from langchain_community.vectorstores import Chroma
 import logging
 from datetime import datetime
 from langchain_chroma import Chroma
@@ -11,6 +10,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_classic.retrievers.multi_query import MultiQueryRetriever
 from langchain_classic.retrievers import EnsembleRetriever
+from config import EMBEDDING_MODEL
 
 import streamlit as st
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -167,7 +167,7 @@ def ingest_docs():
         logger.info(f"Procesamiento: {len(docs_split)} fragmentos generados.")
 
         # Embeddings e Ingesta
-        embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+        embeddings = GoogleGenerativeAIEmbeddings(model=EMBEDDING_MODEL)
         vector_store = Chroma.from_documents(
             documents=docs_split,
             embedding=embeddings,
