@@ -1,7 +1,38 @@
+# python
+import os
 import streamlit as st
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.vectorstores import Chroma
+
+# Leer secreto (Streamlit Cloud) o local (~/.streamlit/secrets.toml)
+GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+if not GOOGLE_API_KEY:
+    st.error("Falta GOOGLE_API_KEY en secrets")
+    st.stop()
+
+# Algunas librerías esperan la variable de entorno
+os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
+
+# Directorio de persistencia para Chroma (recuerda que en Streamlit Cloud es efímero)
+persist_dir = st.secrets.get("CHROMA_PERSIST_DIR", "/tmp/chroma")
+
+# Inicializar embeddings y vectordb
+embeddings = GoogleGenerativeAIEmbeddings()
+vectordb = Chroma(persist_directory=persist_dir, embedding_function=embeddings)
+
+st.write("VectorDB listo:", persist_dir)
+
 
 import config
-from rag_system import query_rag, get_retriever_info, ingest_docs
+try:
+    from rag_system import query_rag, get_retriever_info, ingest_docs
+    RAG_AVAILABLE = True
+    RAG_IMPORT_ERROR = None
+except Exception as _e:
+    # Guardar el error para mostrar instrucciones en la UI
+    RAG_AVAILABLE = False
+    RAG_IMPORT_ERROR = _e
+
 import time
 import os
 import pandas as pd
@@ -9,8 +40,8 @@ from config import CONTRATOS_PATH
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
-    page_title="Sistema RAG - Asistente Legal",
-    page_icon="⚖️",
+    page_title="SINERG-IA",
+    page_icon=":diamond_shape_with_a_dot_inside:",
     layout="wide"
 )
 
@@ -82,7 +113,7 @@ def leer_logs_con_formato(ruta_log='logs/historial_db.log', n_lineas=20):
     return "No se encontraron registros de actividad."
 
 # --- TÍTULO ---
-st.title("⚖️ Sistema RAG - Asistente Legal")
+st.title(":diamond_shape_with_a_dot_inside: SINERG-IA: El núcleo de inteligencia de Grupo FOA")
 st.divider()
 
 # --- SIDEBAR: GESTIÓN DE DOCUMENTOS ---
@@ -90,7 +121,7 @@ with st.sidebar:
     st.header("📋 Gestión de Documentos")
 
     uploaded_files = st.file_uploader(
-        "Añadir nuevos contratos (PDF)",
+        "Añadir nuevos documentos (PDF)",
         type="pdf",
         accept_multiple_files=True,
         key=f"pdf_uploader_{st.session_state.uploader_id}"
@@ -105,7 +136,15 @@ with st.sidebar:
                     save_uploaded_file(uploaded_file)
 
                 st.write("Actualizando vectores en Chroma...")
-                ingest_docs()
+                if RAG_AVAILABLE:
+                    try:
+                        ingest_docs()
+                    except Exception as e:
+                        st.error(f"Error al ejecutar ingest_docs: {e}")
+                else:
+                    st.error("El componente RAG no está disponible en este entorno. Revisa los logs y las dependencias (requirements).")
+                    if RAG_IMPORT_ERROR:
+                        st.caption(str(RAG_IMPORT_ERROR))
 
                 st.cache_resource.clear()
                 st.session_state.uploader_id += 1
@@ -161,8 +200,11 @@ with col1:
                     st.markdown(
                         """
                         <div style="text-align: center; padding: 50px; color: #888;">
-                            <h3 style="margin-bottom: 10px;">⚖️ Bienvenido al Asistente Legal</h3>
-                            <p>Realice una consulta sobre sus contratos para comenzar el análisis.</p>
+                            <h3 style="margin-bottom: 10px;">💬 Bienvenido a SINERG-IA: El núcleo de inteligencia de Grupo FOA</h3>
+                            <p>¿En qué puedo apoyarte hoy? Puedo ayudarte con:<br>
+                                <br>📐 Consultas Técnicas: Especificaciones, planos y normativas.
+                                <br>⚖️ Análisis Legal: Revisión de contratos y cumplimiento.
+                                <br>💼 Gestión Administrativa: Trazabilidad de procesos y control documental.</p>
                         </div>
                         """,
                         unsafe_allow_html=True
@@ -175,7 +217,7 @@ with col1:
                             st.markdown(f"**Tú:** {message['content']}")
                         else:
                             # Respuesta del asistente con formato Markdown optimizado
-                            st.markdown("##### Análisis Legal")
+                            st.markdown("##### SINERG-IA")
                             st.markdown(message["content"])
 
                             # Si hay documentos, mostrar un pequeño badge indicador
@@ -265,10 +307,10 @@ with col2:
                 st.markdown(f"**Página:** {doc['pagina']}")
                 st.caption(doc['contenido'])
     else:
-        st.info("Los fragmentos del contrato aparecerán aquí al consultar.")
+        st.info("Los fragmentos del documento aparecerán aquí al consultar.")
 
 # --- PROCESAMIENTO DE CHAT ---
-if prompt := st.chat_input("Consulta tus contratos..."):
+if prompt := st.chat_input("Realiza una consulta..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.rerun()
 
@@ -276,11 +318,22 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
     last_prompt = st.session_state.messages[-1]["content"]
     with col1:
         with st.chat_message("assistant"):
-            with st.status("⚖️ Analizando documentos legales...", expanded=True) as status:
+            with st.status("🧠 Analizando la base de conocimiento de SINERG-IA...", expanded=True) as status:
                 st.write("🔍 Aplicando Multi-Query...")
                 time.sleep(0.3)
                 st.write("📂 Recuperando contexto relevante...")
-                response, docs = query_rag(last_prompt)
+                if RAG_AVAILABLE:
+                    try:
+                        response, docs = query_rag(last_prompt)
+                    except Exception as e:
+                        response = "El motor RAG falló al procesar la consulta. Revisa los logs."
+                        docs = []
+                        st.error(f"Error interno: {e}")
+                else:
+                    response = "El motor RAG no está disponible en este despliegue. Revisa las dependencias y el archivo requirements."
+                    docs = []
+                    if RAG_IMPORT_ERROR:
+                        st.caption(str(RAG_IMPORT_ERROR))
                 status.update(label="✅ Análisis finalizado", state="complete", expanded=False)
             st.markdown(response)
 
@@ -289,5 +342,5 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
 
 # --- FOOTER ---
 st.divider()
-st.markdown("<div style='text-align: center; color: #666;'>🏛️ Asistente Legal con Google Gemini & Chroma DB</div>",
+st.markdown("<div style='text-align: center; color: #666;'>Desarrollado con Google Gemini & Chroma DB</div>",
             unsafe_allow_html=True)

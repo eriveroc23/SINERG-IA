@@ -32,7 +32,7 @@ def verify_chroma_db():
         return
 
     # 4. Prueba de recuperación (Similitud Simple)
-    test_query = "garaje"  # Cambia esto por una palabra clave de tus contratos
+    test_query = "monto de contrato"  # Cambia esto por una palabra clave de tus contratos
     print(f"\n--- 🧪 Probando búsqueda para: '{test_query}' ---")
 
     docs = vector_db.similarity_search(test_query, k=2)

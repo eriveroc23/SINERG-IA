@@ -1,9 +1,9 @@
-# from langchain_community.vectorstores import Chroma
+
 import logging
 from datetime import datetime
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFDirectoryLoader
-#from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
