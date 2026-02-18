@@ -21,7 +21,7 @@ GENERATION_MODEL = "gemini-flash-latest"
 # GENERATION_MODEL = "gpt-4o"
 
 # Configuración del vector store
-CHROMA_DB_PATH = "/workspaces/SINERG-IA/"
+CHROMA_DB_PATH = "./chroma_db"
 
 # Configuración del retriever
 SEARCH_TYPE = "mmr"

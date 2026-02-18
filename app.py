@@ -1,12 +1,26 @@
-
-import os
 import streamlit as st
-
+import chromadb
+from langchain_chroma import Chroma
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import config
 
+# 1. Primero configuramos los Embeddings
+# Asegúrate de pasarle el modelo (como vimos antes)
+embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
+# 2. Después configuramos la ruta (desde tus secrets)
+persist_dir = st.secrets["CHROMA_DB_PATH"]
 
+# 3. Inicializamos el cliente de Chroma
+client = chromadb.PersistentClient(path=persist_dir)
 
+# 4. Finalmente creamos el objeto vectordb
+# Aquí es donde fallaba porque 'embeddings' no existía arriba
+vectordb = Chroma(
+    client=client,
+    embedding_function=embeddings,  # <--- Ahora sí está definida
+    collection_name="sinergia_collection"
+)
 
 
 try:
@@ -22,6 +36,7 @@ import time
 import os
 import pandas as pd
 from config import CONTRATOS_PATH
+
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
