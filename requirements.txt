@@ -11,3 +11,4 @@ langchain-classic>=1.0.0
 langchain-text-splitters>=1.1.0
 pypdf>=6.4.2
 typing-extensions>=4.15.0
+python-dotenv

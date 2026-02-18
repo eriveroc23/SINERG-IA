@@ -24,7 +24,7 @@ def base_datos():
 
     vector_stores = Chroma.from_documents(
         docs_split,
-        embedding=GoogleGenerativeAIEmbeddings(model="models/text-embedding-004"),
+        embedding=GoogleGenerativeAIEmbeddings(model=EMBEDDING_MODEL),
         persist_directory=CHROMA_DB_PATH
     )
 

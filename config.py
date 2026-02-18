@@ -11,6 +11,7 @@ CONTRATOS_PATH = os.path.join(BASE_DIR, "contratos")
 
 # Configuración de modelos GOOGLE
 EMBEDDING_MODEL = "gemini-embedding-001"
+#EMBEDDING_MODEL = "models/embedding-001"
 QUERY_MODEL = "gemini-flash-latest"
 GENERATION_MODEL = "gemini-flash-latest"
 
@@ -20,7 +21,7 @@ GENERATION_MODEL = "gemini-flash-latest"
 # GENERATION_MODEL = "gpt-4o"
 
 # Configuración del vector store
-CHROMA_DB_PATH = "C:\\Users\\eduar\\PycharmProjects\\asistente_legal_RAG"
+CHROMA_DB_PATH = "/workspaces/SINERG-IA/"
 
 # Configuración del retriever
 SEARCH_TYPE = "mmr"

@@ -1,0 +1,9 @@
+
+# Ignorar archivos de configuración local
+.env
+.streamlit/
+__pycache__/
+*.pyc
+
+# Ignorar base de datos de Chroma si es local
+chroma_db/

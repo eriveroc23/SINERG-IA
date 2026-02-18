@@ -12,6 +12,8 @@ def run_system_check():
         "API Key configurada": "GOOGLE_API_KEY" in os.environ or st.secrets.get("GOOGLE_API_KEY") is not None
     }
 
+
+
     # Verificar si hay PDFs en la carpeta
     if checks["Carpeta de contratos"]:
         pdfs = [f for f in os.listdir(CONTRATOS_PATH) if f.lower().endswith('.pdf')]

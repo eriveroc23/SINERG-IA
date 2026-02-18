@@ -1,29 +1,14 @@
-# python
+
 import os
 import streamlit as st
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_community.vectorstores import Chroma
-
-# Leer secreto (Streamlit Cloud) o local (~/.streamlit/secrets.toml)
-GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-if not GOOGLE_API_KEY:
-    st.error("Falta GOOGLE_API_KEY en secrets")
-    st.stop()
-
-# Algunas librerías esperan la variable de entorno
-os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
-
-# Directorio de persistencia para Chroma (recuerda que en Streamlit Cloud es efímero)
-persist_dir = st.secrets.get("CHROMA_PERSIST_DIR", "/tmp/chroma")
-
-# Inicializar embeddings y vectordb
-embeddings = GoogleGenerativeAIEmbeddings()
-vectordb = Chroma(persist_directory=persist_dir, embedding_function=embeddings)
-
-st.write("VectorDB listo:", persist_dir)
-
 
 import config
+
+
+
+
+
+
 try:
     from rag_system import query_rag, get_retriever_info, ingest_docs
     RAG_AVAILABLE = True
